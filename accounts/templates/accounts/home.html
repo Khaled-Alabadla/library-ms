@@ -1,0 +1,22 @@
+{% extends 'accounts/base.html' %}
+
+{% block title %}Home - Auth System{% endblock %}
+
+{% block content %}
+    <h1>Hello, {{ custom_user.username }}!</h1>
+    <p class="subtitle">Welcome to your dashboard</p>
+
+    <div style="text-align: center; margin: 2rem 0;">
+        <div style="font-size: 3rem;">👋</div>
+        <p style="color: var(--text-muted); margin-top: 1rem;">
+            You are successfully logged in. This is a protected page.
+        </p>
+    </div>
+
+    <form action="{% url 'logout' %}" method="POST">
+        {% csrf_token %}
+        <button type="submit" class="btn" style="background: rgba(239, 68, 68, 0.1); color: var(--error); border: 1px solid rgba(239, 68, 68, 0.2);">
+            Log Out
+        </button>
+    </form>
+{% endblock %}

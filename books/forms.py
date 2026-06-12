@@ -1,0 +1,79 @@
+from django import forms
+from django.utils import timezone
+from .models import Book
+
+
+class BookForm(forms.ModelForm):
+    # category = forms.ModelChoiceField(
+    #     queryset=Book.objects.all(),
+    #     empty_label='Choose category',
+    #     widget=forms.Select(attrs={'class': 'form-control form-select'}),
+    #     required=False,
+    # )
+
+    class Meta:
+        model = Book
+        fields = ['title', 'author', 'description', 'published_date', 'isbn', 'book_img']
+        widgets = {
+            'title': forms.TextInput(attrs={'class': 'form-control'}),
+            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
+            'published_date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'isbn': forms.TextInput(attrs={'class': 'form-control'}),
+            'author': forms.Select(attrs={'class': 'form-select'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super(BookForm, self).__init__(*args, **kwargs)
+        self.fields['author'].empty_label = None
+
+    def clean_title(self):
+        title = self.cleaned_data.get('title', '')
+        if not title or not title.strip():
+            raise forms.ValidationError('Title cannot be blank.')
+        return title
+    
+    def clean_published_date(self):
+        published_date = self.cleaned_data.get('published_date')
+        if published_date and published_date > timezone.now().date():
+            raise forms.ValidationError('Published date cannot be in the future.')
+        return published_date
+
+    def clean_isbn(self):
+        isbn = self.cleaned_data.get('isbn')
+        if isbn:
+            if len(isbn) < 10 or len(isbn) > 20:
+                raise forms.ValidationError('ISBN should be between 10 and 20 characters.')
+        return isbn
+
+    def clean(self):
+        cleaned = super().clean()
+        errors = {}
+
+        published_date = cleaned.get('published_date')
+        if published_date and published_date > timezone.now().date():
+            errors['published_date'] = 'Published date cannot be in the future.'
+
+        isbn = cleaned.get('isbn')
+        if isbn:
+            if len(isbn) < 10 or len(isbn) > 20:
+                errors['isbn'] = 'ISBN should be between 10 and 20 characters.'
+
+        if errors:
+            raise forms.ValidationError(errors)
+        return cleaned
+        
+
+class ConfirmDeleteForm(forms.Form):
+    confirm_title = forms.CharField(label='Type the book title to confirm', widget=forms.TextInput(attrs={'class': 'form-control'}))
+
+    def __init__(self, *args, book=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.book = book
+
+    def clean_confirm_title(self):
+        val = self.cleaned_data.get('confirm_title', '')
+        if not self.book:
+            raise forms.ValidationError('No book specified for confirmation.')
+        if val.strip() != self.book.title:
+            raise forms.ValidationError('Title does not match.')
+        return val

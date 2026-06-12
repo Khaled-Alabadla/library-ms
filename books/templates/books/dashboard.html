@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+
+{% block title %}
+  Books Dashboard
+{% endblock %}
+
+{% block content %}
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Books Dashboard</h2>
+    <a href="{% url 'books:create' %}" class="btn btn-primary">Add Book</a>
+  </div>
+
+  <div class="card shadow-sm">
+    <div class="card-body">
+      <table class="table table-striped text-center align-middle">
+        <thead>
+          <tr>
+            <th>Title</th>
+            <th>Author</th>
+            <th>Published</th>
+            <th>ISBN</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for book in books %}
+            <tr>
+              <td>{{ book.title }}</td>
+              <td>{{ book.author }}</td>
+              <td>{{ book.published_date }}</td>
+              <td>{{ book.isbn }}</td>
+              <td class="text-end">
+                <div class="d-flex h-100 align-items-stretch justify-content-end" style="gap: 5px">
+                  <a href="{% url 'books:edit' book.pk %}" class="btn btn-sm btn-outline-secondary d-flex align-items-center">Edit</a>
+                  <button type="button" class="btn btn-sm btn-outline-danger d-flex align-items-center js-delete-book" data-url="{% url 'books:ajax_delete' book.pk %}">Delete</button>
+                </div>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="5">No books yet.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script>
+    const csrftoken = document.querySelector('meta[name="csrf-token"]').content
+    document.querySelectorAll('.js-delete-book').forEach(function (btn) {
+      btn.addEventListener('click', function (e) {
+        e.preventDefault()
+        const url = btn.dataset.url
+        Swal.fire({
+          title: 'Delete book?',
+          text: 'This action cannot be undone.',
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonText: 'Yes, delete it!',
+          cancelButtonText: 'Cancel'
+        }).then((result) => {
+          if (result.isConfirmed) {
+            fetch(url, {
+              method: 'POST',
+              headers: { 'X-CSRFToken': csrftoken },
+              body: JSON.stringify({})
+            })
+              .then((response) => response.json())
+              .then((data) => {
+                if (data.success) {
+                  Swal.fire('Deleted!', 'The book has been deleted.', 'success').then(() => location.reload())
+                } else {
+                  Swal.fire('Error', data.error || 'Could not delete the book.', 'error')
+                }
+              })
+              .catch(() => Swal.fire('Error', 'Request failed.', 'error'))
+          }
+        })
+      })
+    })
+  </script>
+{% endblock %}
