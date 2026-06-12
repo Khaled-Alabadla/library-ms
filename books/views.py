@@ -40,17 +40,19 @@ def book_create_validate(request):
     if form.is_valid():
         return JsonResponse({'success': True})
     # form.errors.get_json_data() returns a JSON-serializable structure
-    return JsonResponse({'success': False,
-'errors': [error['message'] for sublist in form.errors.get_json_data().values() for error in sublist]                          })
+    # Build a mapping of field -> [messages] so the client can show errors per-field
+    json_data = form.errors.get_json_data()
+    errors = {field: [err['message'] for err in err_list] for field, err_list in json_data.items()}
+    return JsonResponse({'success': False, 'errors': errors})
 
 
 def book_update(request, pk):
     book = get_object_or_404(Book, pk=pk)
     if request.method == 'POST':
-        form = BookForm(request.POST, instance=book)
+        form = BookForm(request.POST, request.FILES, instance=book)
         if form.is_valid():
             # Use manager to update (pass instance and cleaned data)
-            Book.objects.update_book(book, form.cleaned_data)
+            form.save()
             messages.success(request, 'Book updated successfully.')
             return redirect('books:dashboard')
     else:

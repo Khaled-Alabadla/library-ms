@@ -36,7 +36,8 @@ class Book(models.Model):
     published_date = models.DateField(null=True, blank=True)
     isbn = models.CharField(max_length=20, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
-    book_img = models.ImageField(upload_to='images/', null=True)
+    book_img = models.ImageField(upload_to='images/', null=True, blank=True)
+
 
     objects = BookManager()
 

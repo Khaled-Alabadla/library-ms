@@ -40,14 +40,39 @@
             .then((response) => response.json())
             .then((data) => {
               const errorsDiv = document.getElementById('validation-errors')
+              // clear previous errors
               errorsDiv.innerHTML = ''
+              form.querySelectorAll('.field-error').forEach((el) => el.remove())
+      
               if (data.success) {
                 // validation passed; submit the form normally so server still validates and creates
                 form.submit()
                 return
               }
-              // Minimal error display: show server error or JSON string of errors
-              errorsDiv.innerHTML = '<div class="alert alert-danger">' + data.errors.join('<br>') + '</div>'
+      
+              // data.errors is expected as { field_name: [msg, ...], __all__: [msg, ...] }
+              const nonField = []
+              for (const [name, msgs] of Object.entries(data.errors || {})) {
+                if (!msgs || !msgs.length) continue
+                if (name === '__all__' || name === 'non_field_errors') {
+                  nonField.push(...msgs)
+                  continue
+                }
+                // find the input/select/textarea by name
+                const field = form.querySelector(`[name="${name}"]`)
+                // fallback: try inputs with name like name[] or django form prefixes
+                const wrapper = field ? field.closest('.mb-3') || field.parentNode : null
+                msgs.forEach((msg) => {
+                  const div = document.createElement('div')
+                  div.className = 'field-error text-danger small'
+                  div.innerHTML = msg
+                  if (wrapper) wrapper.appendChild(div)
+                })
+              }
+      
+              if (nonField.length) {
+                errorsDiv.innerHTML = '<div class="alert alert-danger">' + nonField.join('<br>') + '</div>'
+              }
             })
             .catch(() => {
               const errorsDiv = document.getElementById('validation-errors')
