@@ -19,9 +19,12 @@ def book_create(request):
         form = BookForm(request.POST,  request.FILES)
         if form.is_valid():
             form.save()
-            # Book.objects.create_book(form.cleaned_data)
             messages.success(request, 'Book created successfully.')
             return redirect('books:dashboard')
+            # return JsonResponse({
+            #     'success': True, 
+            #     'redirect_url': reverse('books:dashboard')
+            # })
     else:
         form = BookForm()
     return render(request, 'books/book_form.html', {'form': form, 'action': 'Create'})

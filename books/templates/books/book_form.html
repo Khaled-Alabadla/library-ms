@@ -33,12 +33,18 @@
           e.preventDefault()
           const url = "{% url 'books:create_validate' %}"
           const formData = new FormData(form)
-          fetch(url, {
+          const csrftoken = document.querySelector('meta[name="csrf-token"]').content
+      
+          $.ajax({
+            url: url,
             method: 'POST',
-            body: formData
+            data: formData,
+            processData: false,
+            contentType: false,
+            dataType: 'json',
+            headers: { 'X-CSRFToken': csrftoken }
           })
-            .then((response) => response.json())
-            .then((data) => {
+            .done(function (data) {
               const errorsDiv = document.getElementById('validation-errors')
               // clear previous errors
               errorsDiv.innerHTML = ''
@@ -74,7 +80,7 @@
                 errorsDiv.innerHTML = '<div class="alert alert-danger">' + nonField.join('<br>') + '</div>'
               }
             })
-            .catch(() => {
+            .fail(function () {
               const errorsDiv = document.getElementById('validation-errors')
               errorsDiv.innerHTML = '<div class="alert alert-danger">Validation request failed.</div>'
             })

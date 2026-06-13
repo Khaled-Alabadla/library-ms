@@ -62,20 +62,23 @@
           cancelButtonText: 'Cancel'
         }).then((result) => {
           if (result.isConfirmed) {
-            fetch(url, {
+            $.ajax({
+              url: url,
               method: 'POST',
               headers: { 'X-CSRFToken': csrftoken },
-              body: JSON.stringify({})
+              data: {},
+              dataType: 'json'
             })
-              .then((response) => response.json())
-              .then((data) => {
+              .done(function (data) {
                 if (data.success) {
                   Swal.fire('Deleted!', 'The book has been deleted.', 'success').then(() => location.reload())
                 } else {
                   Swal.fire('Error', data.error || 'Could not delete the book.', 'error')
                 }
               })
-              .catch(() => Swal.fire('Error', 'Request failed.', 'error'))
+              .fail(function () {
+                Swal.fire('Error', 'Request failed.', 'error')
+              })
           }
         })
       })
