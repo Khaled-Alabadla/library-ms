@@ -1,9 +1,21 @@
 from django import forms
 from django.utils import timezone
-from .models import Book
+from .models import Book, Tag, Category
 
 
 class BookForm(forms.ModelForm):
+    tags = forms.ModelMultipleChoiceField(
+        queryset=Tag.objects.all(),
+        required=False,
+        widget=forms.SelectMultiple(attrs={'class': 'form-select'}),
+        help_text='Select one or more tags',
+    )
+    categories = forms.ModelMultipleChoiceField(
+        queryset=Category.objects.all(),
+        required=False,
+        widget=forms.SelectMultiple(attrs={'class': 'form-select'}),
+        help_text='Select one or more categories',
+    )
     # category = forms.ModelChoiceField(
     #     queryset=Book.objects.all(),
     #     empty_label='Choose category',
@@ -25,6 +37,11 @@ class BookForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super(BookForm, self).__init__(*args, **kwargs)
         self.fields['author'].empty_label = None
+        # populate tags and categories initial values when editing
+        instance = kwargs.get('instance')
+        if instance and instance.pk:
+            self.fields['tags'].initial = instance.tags.all()
+            self.fields['categories'].initial = instance.categories.all()
 
     def clean_title(self):
         title = self.cleaned_data.get('title', '')
@@ -61,6 +78,34 @@ class BookForm(forms.ModelForm):
         if errors:
             raise forms.ValidationError(errors)
         return cleaned
+
+    def save(self, commit=True):
+        # Save instance without committing m2m immediately so we can
+        # handle assignments explicitly. Provide a save_m2m fallback
+        # when commit=False so callers can call it later.
+        instance = super().save(commit=False)
+
+        tags_qs = self.cleaned_data.get('tags')
+        cats_qs = self.cleaned_data.get('categories')
+
+        if commit:
+            instance.save()
+            if tags_qs is not None:
+                instance.tags.set(tags_qs)
+            if cats_qs is not None:
+                instance.categories.set(cats_qs)
+            return instance
+
+        # commit is False: attach a save_m2m method to the form instance
+        def _save_m2m():
+            if tags_qs is not None:
+                instance.tags.set(tags_qs)
+            if cats_qs is not None:
+                instance.categories.set(cats_qs)
+
+        # Ensure callers that expect ModelForm.save_m2m will work
+        self.save_m2m = _save_m2m
+        return instance
         
 
 class ConfirmDeleteForm(forms.Form):

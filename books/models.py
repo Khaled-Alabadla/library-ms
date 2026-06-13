@@ -20,6 +20,8 @@ class BookManager(models.Manager):
             if field in data:
                 setattr(book, field, data[field])
         book.save(using=self._db)
+        # Note: tags handling is done in the form save method to avoid
+        # circular imports and to ensure proper creation of Tag objects.
         return book
     
 class Author(models.Model):
@@ -37,9 +39,25 @@ class Book(models.Model):
     isbn = models.CharField(max_length=20, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     book_img = models.ImageField(upload_to='images/', null=True, blank=True)
+    tags = models.ManyToManyField('Tag', blank=True, related_name='books')
+    categories = models.ManyToManyField('Category', blank=True, related_name='books')
 
 
     objects = BookManager()
 
     def __str__(self):
         return f"{self.title} by {self.author}"
+
+
+class Tag(models.Model):
+    name = models.CharField(max_length=50, unique=True)
+
+    def __str__(self):
+        return self.name
+
+
+class Category(models.Model):
+    name = models.CharField(max_length=50, unique=True)
+
+    def __str__(self):
+        return self.name
