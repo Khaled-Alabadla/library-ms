@@ -51,7 +51,6 @@ def book_update(request, pk):
     if request.method == 'POST':
         form = BookForm(request.POST, request.FILES, instance=book)
         if form.is_valid():
-            # Use manager to update (pass instance and cleaned data)
             form.save()
             messages.success(request, 'Book updated successfully.')
             return redirect('books:dashboard')

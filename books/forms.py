@@ -62,23 +62,6 @@ class BookForm(forms.ModelForm):
                 raise forms.ValidationError('ISBN should be between 10 and 20 characters.')
         return isbn
 
-    def clean(self):
-        cleaned = super().clean()
-        errors = {}
-
-        published_date = cleaned.get('published_date')
-        if published_date and published_date > timezone.now().date():
-            errors['published_date'] = 'Published date cannot be in the future.'
-
-        isbn = cleaned.get('isbn')
-        if isbn:
-            if len(isbn) < 10 or len(isbn) > 20:
-                errors['isbn'] = 'ISBN should be between 10 and 20 characters.'
-
-        if errors:
-            raise forms.ValidationError(errors)
-        return cleaned
-
     def save(self, commit=True):
         # Save instance without committing m2m immediately so we can
         # handle assignments explicitly. Provide a save_m2m fallback
